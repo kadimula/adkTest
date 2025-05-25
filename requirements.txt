@@ -1,5 +1,5 @@
 fastapi==0.110.2
 mangum==0.17.0
-google-adk==0.1.4     # pin the latest stable you need
-boto3==1.34.97        # ADK often calls GCP, but we include boto3 for any AWS calls
+google-adk==1.0.0
+boto3==1.34.97
 pydantic==2.7.1
