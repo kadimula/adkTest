@@ -32,8 +32,6 @@ jobs:
           sam build
           sam deploy \
             --stack-name adk-lambda-agent \
-            --no-confirm-changeset \
-            --no-fail-on-empty-changeset \
-            --resolve-s3 \                
+            --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --region us-west-2
