@@ -1,0 +1,28 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# VSCode settings
+.vscode/
+
+# SAM/Build artifacts
+.aws-sam/
+*.log
+
+# Python dependencies
+*.egg-info/
+dist/
+build/
+
+# OS files
+.DS_Store
+
+# Secrets
+*.env
+.env.*
