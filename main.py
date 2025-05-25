@@ -1,22 +1,27 @@
-from fastapi import FastAPI, Request
-from multi_tool_agent.agent import root_agent
+from fastapi import FastAPI
+from pydantic import BaseModel
 from mangum import Mangum
+from multi_tool_agent.agent import root_agent
 
 app = FastAPI()
 
 
-@app.get("/")
-def health():
+class Query(BaseModel):
+    city: str
+    task: str  # "weather" or "time"
+
+
+@app.get("/ping")
+def ping():
     return {"status": "ok"}
 
 
-@app.post("/run_tool")
-async def run_tool(req: Request):
-    body = await req.json()
-    tool = body.get("tool")
-    args = body.get("args", {})
-    result = root_agent.run_tool(tool, args)
-    return result
+@app.post("/ask")
+def ask(q: Query):
+    if q.task == "weather":
+        return root_agent.run_tool("get_weather", {"city": q.city})
+    return root_agent.run_tool("get_current_time", {"city": q.city})
 
 
+# AWS Lambda entry‑point
 handler = Mangum(app)

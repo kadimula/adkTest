@@ -1,37 +1,63 @@
-name: Deploy to AWS
+name: Build & Deploy Lambda Container
 
 on:
   push:
     branches: [main]
 
+env:
+  AWS_REGION: us-west-2
+  IMAGE_REPO: adk-lambda
+  FUNCTION_NAME: adk-lambda
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install AWS SAM
-        run: |
-          pip install aws-sam-cli
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: SAM Build & Deploy
+      - name: Log in to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag & push image
         run: |
-          sam build
-          sam deploy \
-            --stack-name adk-lambda-agent \
-            --resolve-s3 \
-            --capabilities CAPABILITY_IAM \
-            --region us-west-2
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_REPO }}:latest
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Create or update Lambda
+        run: |
+          set -e
+          IMAGE_URI=$IMAGE_URI
+          ROLE_ARN=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/adk_execution
+
+          if aws lambda get-function --function-name $FUNCTION_NAME >/dev/null 2>&1; then
+            aws lambda update-function-code \
+              --function-name $FUNCTION_NAME \
+              --image-uri $IMAGE_URI
+          else
+            aws lambda create-function \
+              --function-name $FUNCTION_NAME \
+              --package-type Image \
+              --code ImageUri=$IMAGE_URI \
+              --role $ROLE_ARN \
+              --timeout 30 \
+              --memory-size 256
+          fi
+
+      - name: Ensure Lambda URL exists
+        run: |
+          aws lambda get-function-url-config \
+            --function-name $FUNCTION_NAME || \
+          aws lambda create-function-url-config \
+            --function-name $FUNCTION_NAME \
+            --auth-type "NONE"
