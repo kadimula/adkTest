@@ -46,10 +46,13 @@ def ask(q: Query) -> JSONResponse:
     log.info("User message: %s", q.message)
 
     try:
-        result = root_agent.run(q.message)  # 👈 now the agent decides
+        result = root_agent.run_conversation(
+            messages=[{"role": "user", "content": q.message}]
+        )
+        response_text = result["messages"][-1]["content"]
 
         return JSONResponse(
-            content={"status": "success", "response": result}, status_code=200
+            content={"status": "success", "response": response_text}, status_code=200
         )
 
     except Exception as exc:
