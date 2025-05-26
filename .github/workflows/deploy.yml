@@ -51,6 +51,11 @@ jobs:
               --function-name $FUNCTION_NAME \
               --image-uri $IMAGE_URI
 
+            echo "Waiting for function update to complete..."
+            aws lambda wait function-updated \
+              --function-name $FUNCTION_NAME
+
+            echo "Now updating configuration..."
             aws lambda update-function-configuration \
               --function-name $FUNCTION_NAME \
               --timeout 120 \
