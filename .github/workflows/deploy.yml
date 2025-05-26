@@ -49,14 +49,16 @@ jobs:
             aws lambda update-function-code \
               --function-name $FUNCTION_NAME \
               --image-uri $IMAGE_URI
+              --timeout 120 \
+              --memory-size 512
           else
             aws lambda create-function \
               --function-name $FUNCTION_NAME \
               --package-type Image \
               --code ImageUri=$IMAGE_URI \
               --role $ROLE_ARN \
-              --timeout 30 \
-              --memory-size 256
+              --timeout 120 \
+              --memory-size 512
           fi
 
       - name: Ensure Lambda URL exists
