@@ -53,22 +53,21 @@ def ping() -> dict:  # noqa: D401
 
 
 @app.post("/ask", response_model=dict)
-def ask(q: Query) -> JSONResponse:  # noqa: D401
-    """Route request to the appropriate ADK tool."""
+def ask(q: Query) -> JSONResponse:
     log.info("Received task=%s city=%s", q.task, q.city)
 
     try:
         if q.task == "weather":
-            result = root_agent.run_tool("get_weather", {"city": q.city})
+            result = root_agent.tools["get_weather"](city=q.city)
         elif q.task == "time":
-            result = root_agent.run_tool("get_current_time", {"city": q.city})
-        else:  # This branch is unreachable thanks to the Literal type
+            result = root_agent.tools["get_current_time"](city=q.city)
+        else:
             raise HTTPException(status_code=400, detail=f"Unknown task '{q.task}'")
 
         status_code = 200 if result.get("status") == "success" else 400
         return JSONResponse(content=result, status_code=status_code)
 
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         log.exception("Unhandled exception processing request: %s", exc)
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
