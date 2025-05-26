@@ -19,8 +19,15 @@ def ping():
 @app.post("/ask")
 def ask(q: Query):
     if q.task == "weather":
-        return root_agent.run_tool("get_weather", {"city": q.city})
-    return root_agent.run_tool("get_current_time", {"city": q.city})
+        result = root_agent.run_tool("get_weather", {"city": q.city})
+    elif q.task == "time":
+        result = root_agent.run_tool("get_current_time", {"city": q.city})
+    else:
+        return {"status": "error", "error_message": f"Unknown task '{q.task}'"}
+
+    # Debug print for Lambda logs
+    print("Agent result:", result)
+    return result
 
 
 # AWS Lambda entry‑point
