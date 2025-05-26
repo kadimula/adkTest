@@ -37,4 +37,4 @@ def ask(q: Query):
 
 
 # AWS Lambda entry‑point
-handler = Mangum(app)
+handler = Mangum(app, api_gateway_base_path=None)
