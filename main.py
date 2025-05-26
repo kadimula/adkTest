@@ -20,20 +20,15 @@ from mangum import Mangum
 
 from multi_tool_agent.agent import root_agent
 
-# --------------------------------------------------------------------------- #
-#  Logging
-# --------------------------------------------------------------------------- #
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 log = logging.getLogger(__name__)
 
-# --------------------------------------------------------------------------- #
-#  FastAPI setup
-# --------------------------------------------------------------------------- #
 app = FastAPI(title="ADK multi‑tool demo")
-log.info("✅ FastAPI Lambda container starting up…")
+log.info("FastAPI Lambda container starting up…")
 
 
 class Query(BaseModel):
@@ -54,29 +49,21 @@ def ping() -> dict:  # noqa: D401
 
 @app.post("/ask", response_model=dict)
 def ask(q: Query) -> JSONResponse:
-    log.info("Received task=%s city=%s", q.task, q.city)
+    log.info("User message: %s", q.message)
 
     try:
-        if q.task == "weather":
-            result = root_agent.tools["get_weather"](city=q.city)
-        elif q.task == "time":
-            result = root_agent.tools["get_current_time"](city=q.city)
-        else:
-            raise HTTPException(status_code=400, detail=f"Unknown task '{q.task}'")
+        result = root_agent.run(q.message)  # 👈 now the agent decides
 
-        status_code = 200 if result.get("status") == "success" else 400
-        return JSONResponse(content=result, status_code=status_code)
+        return JSONResponse(
+            content={"status": "success", "response": result}, status_code=200
+        )
 
     except Exception as exc:
-        log.exception("Unhandled exception processing request: %s", exc)
+        log.exception("Agent error: %s", exc)
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
-# --------------------------------------------------------------------------- #
-#  Lambda entry point
-# --------------------------------------------------------------------------- #
-# If you deploy behind a Lambda URL the base path is '/default'.
-# For API Gateway stages use '/prod', '/test', etc.
+# When deploying behind Lambda URL the base path is '/default'.
 api_base_path = os.getenv("API_BASE_PATH", "/default")
 
 handler = Mangum(app, api_gateway_base_path=api_base_path)

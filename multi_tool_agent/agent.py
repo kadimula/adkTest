@@ -12,30 +12,19 @@ import datetime as _dt
 import logging
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-# --------------------------------------------------------------------------- #
-#  Runtime configuration
-# --------------------------------------------------------------------------- #
-# Tell ADK to use Amazon Bedrock and pin a region before the SDK initialises.
-os.environ.setdefault("ADK_DEFAULT_BACKEND", "bedrock")
-os.environ.setdefault(
-    "AWS_REGION", "us-west-2"
-)  # change if your Bedrock lives elsewhere
 
-# Basic structured logging (CloudWatch will merge JSON nicely if you want to
-# switch to python-json-logger later).
+os.environ.setdefault("ADK_DEFAULT_BACKEND", "bedrock")
+os.environ.setdefault("AWS_REGION", "us-west-2")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 log = logging.getLogger(__name__)
 
-# ADK import happens *after* env‑vars are set
-from google.adk.agents import Agent  # noqa: E402  (import after env vars)
+
+from google.adk.agents import Agent
 
 
-# --------------------------------------------------------------------------- #
-#  Tool definitions
-# --------------------------------------------------------------------------- #
 def get_weather(city: str) -> dict:
     """
     Demo weather tool – replace with a real provider later.
@@ -79,9 +68,6 @@ def get_current_time(city: str) -> dict:
     }
 
 
-# --------------------------------------------------------------------------- #
-#  Root agent
-# --------------------------------------------------------------------------- #
 root_agent = Agent(
     name="weather_time_agent",
     description="Answers questions about time and weather in a city.",
