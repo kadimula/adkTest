@@ -32,13 +32,7 @@ log.info("FastAPI Lambda container starting up…")
 
 
 class Query(BaseModel):
-    city: str = Field(..., min_length=1, description="Target city name")
-    task: Literal["weather", "time"]
-
-    # Normalize city names early
-    @validator("city")
-    def strip_city(cls, v: str) -> str:  # noqa: D401
-        return v.strip()
+    message: str
 
 
 @app.get("/ping", response_model=dict)
