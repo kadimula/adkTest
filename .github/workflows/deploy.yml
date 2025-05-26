@@ -78,3 +78,13 @@ jobs:
           aws lambda create-function-url-config \
             --function-name $FUNCTION_NAME \
             --auth-type "NONE"
+      - name: Ensure Lambda Function URL is public
+        run: |
+          set -e
+          aws lambda add-permission \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --action lambda:InvokeFunctionUrl \
+            --principal "*" \
+            --statement-id allow-public-invoke-url \
+            --function-url-auth-type NONE \
+            --region ${{ env.AWS_REGION }} || echo "Permission may already exist – continuing..."
