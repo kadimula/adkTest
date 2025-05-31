@@ -4,6 +4,7 @@ from __future__ import annotations
 import os, logging, datetime as _dt
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from google.adk.agents import Agent
+from google.adk.models.lite_llm import LiteLlm
 
 os.environ.setdefault("ADK_DEFAULT_BACKEND", "bedrock")
 os.environ.setdefault("AWS_REGION", "us-west-2")
@@ -42,10 +43,18 @@ def get_current_time(city: str) -> dict:
     }
 
 
+def default_llm() -> LiteLlm:
+    if os.getenv("ENV", "local") != "local":
+        return LiteLlm(
+            model="bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0"
+        )
+    return LiteLlm(model="ollama/tinyllama:latest")
+
+
 root_agent = Agent(
     name="weather_time_agent",
     description="Answers questions about time and weather in a city.",
     instruction="Be helpful, accurate, and concise.",
-    model="bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0",
+    model=default_llm(),  # "openai:gpt-3.5-turbo",  # "bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0",
     tools=[get_weather, get_current_time],
 )

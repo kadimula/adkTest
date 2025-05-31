@@ -26,7 +26,6 @@ class Query(BaseModel):
 # ADK session + runner wiring (one‑time)
 _service = InMemorySessionService()
 APP, UID, SID = "weather_time_app", "lambda", "session"
-_service.create_session(app_name=APP, user_id=UID, session_id=SID)
 runner = Runner(agent=root_agent, app_name=APP, session_service=_service)
 
 
@@ -35,9 +34,16 @@ def ping() -> dict:
     return {"status": "ok"}
 
 
+from fastapi import Request
+
+
 @app.post("/ask")
-def ask(q: Query) -> JSONResponse:
+async def ask(q: Query, request: Request) -> JSONResponse:
     try:
+        existing = _service.get_session(app_name=APP, user_id=UID, session_id=SID)
+        if not existing:
+            _service.create_session(app_name=APP, user_id=UID, session_id=SID)
+
         content = genai_types.Content(
             role="user", parts=[genai_types.Part(text=q.message)]
         )
