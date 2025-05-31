@@ -1,66 +1,60 @@
-"""
-FastAPI application served via AWS Lambda (container image).
-
-Endpoints
----------
-GET  /ping        – liveness check
-POST /ask         – { "city": <str>, "task": "weather" | "time" }
-"""
-
+# main.py
 from __future__ import annotations
 
-import logging
-import os
-from typing import Literal
-
+import logging, os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
+from google.genai import types as genai_types
 from mangum import Mangum
-
 from multi_tool_agent.agent import root_agent
 
-
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="ADK multi‑tool demo")
-log.info("FastAPI Lambda container starting up…")
 
 
 class Query(BaseModel):
     message: str
 
 
-@app.get("/ping", response_model=dict)
-def ping() -> dict:  # noqa: D401
-    """Simple liveness probe."""
+# ADK session + runner wiring (one‑time)
+_service = InMemorySessionService()
+APP, UID, SID = "weather_time_app", "lambda", "session"
+_service.create_session(app_name=APP, user_id=UID, session_id=SID)
+runner = Runner(agent=root_agent, app_name=APP, session_service=_service)
+
+
+@app.get("/ping")
+def ping() -> dict:
     return {"status": "ok"}
 
 
-@app.post("/ask", response_model=dict)
+@app.post("/ask")
 def ask(q: Query) -> JSONResponse:
-    log.info("User message: %s", q.message)
-
     try:
-        result = root_agent.run_conversation(
-            messages=[{"role": "user", "content": q.message}]
+        content = genai_types.Content(
+            role="user", parts=[genai_types.Part(text=q.message)]
         )
-        response_text = result["messages"][-1]["content"]
 
-        return JSONResponse(
-            content={"status": "success", "response": response_text}, status_code=200
-        )
+        events = runner.run(user_id=UID, session_id=SID, new_message=content)
+
+        responses = [
+            e.content.parts[0].text
+            for e in events
+            if e.content and e.content.parts and e.content.parts[0].text
+        ]
+
+        return JSONResponse({"status": "success", "response": "\n\n".join(responses)})
 
     except Exception as exc:
-        log.exception("Agent error: %s", exc)
-        raise HTTPException(status_code=500, detail="Internal server error") from exc
+        log.exception("agent error")
+        raise HTTPException(status_code=500, detail="internal server error") from exc
 
 
-# When deploying behind Lambda URL the base path is '/default'.
-api_base_path = os.getenv("API_BASE_PATH", "/default")
-
-handler = Mangum(app, api_gateway_base_path=api_base_path)
+handler = Mangum(app, api_gateway_base_path=os.getenv("API_BASE_PATH", "/default"))
