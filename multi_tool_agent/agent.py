@@ -42,6 +42,6 @@ root_agent = Agent(
     name="weather_and_time_assistant",
     description="Answers questions about time and weather in a city.",
     instruction="Be helpful, accurate, and concise.",
-    model="litellm/bedrock/mistral.mistral-7b-instruct-v0:0",
+    model=LiteLlm(model="bedrock/mistral.mistral-7b-instruct-v0:2"),
     tools=[get_weather, get_current_time],
 )
