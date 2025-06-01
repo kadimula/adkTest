@@ -38,10 +38,49 @@ def get_current_time(city: str) -> dict:
     }
 
 
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get the current weather in a given city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "unit": {"type": "string"},
+                },
+                "required": ["city"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_time",
+            "description": "Get the current time in a given city",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "unit": {"type": "string"},
+                },
+                "required": ["city"],
+            },
+        },
+    },
+]
+
 root_agent = Agent(
-    name="weather_and_time_assistant",
-    description="Answers questions about time and weather in a city.",
-    instruction="Be helpful, accurate, and concise.",
-    model=LiteLlm(model="bedrock/mistral.mistral-7b-instruct-v0:2"),
-    tools=[get_weather, get_current_time],
+    model=LiteLlm(
+        model="bedrock/mistral.mistral-7b-instruct-v0:2",
+        tools=tools,
+        tool_choice="auto",
+    ),
 )
