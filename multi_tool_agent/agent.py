@@ -38,22 +38,10 @@ def get_current_time(city: str) -> dict:
     }
 
 
-def default_llm() -> LiteLlm:
-
-    if os.getenv("ENV", "local") == "local":
-        return LiteLlm(
-            model="ollama/tinyllama:latest",
-            tools_strategy="explicit",
-            tool_choice="auto",
-            allowed_tools=["get_weather", "get_current_time"],
-        )
-    return LiteLlm(model="bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0")
-
-
 root_agent = Agent(
     name="weather_and_time_assistant",
     description="Answers questions about time and weather in a city.",
     instruction="Be helpful, accurate, and concise.",
-    model=default_llm(),  # "openai:gpt-3.5-turbo",  # "bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0",
+    model="bedrock:foundation-model/mistral.mistral-7b-instruct-v0:0",
     tools=[get_weather, get_current_time],
 )
