@@ -78,6 +78,7 @@ tools = [
 ]
 
 root_agent = Agent(
+    name="weather_time_assistant",
     model=LiteLlm(
         model="bedrock/mistral.mistral-7b-instruct-v0:2",
         tools=tools,
